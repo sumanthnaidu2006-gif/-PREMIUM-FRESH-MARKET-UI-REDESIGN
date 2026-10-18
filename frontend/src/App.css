@@ -1,0 +1,32 @@
+/* Fresh Market Design System Utility Layer */
+
+:root {
+  --primary-forest: #285943;
+  --dark-forest: #1D4232;
+  --warm-ivory: #F8F7F0;
+  --soft-sage: #E9F0E7;
+  --action-orange: #EFA36B;
+  --text-main: #252D27;
+  --text-secondary: #667168;
+  --card-white: #FFFFFF;
+  --subtle-border: #E5E3D9;
+  --sale-badge: #B94A40;
+  --state-success: #28734D;
+  --state-warning: #94651C;
+  --state-error: #B83D32;
+}
+
+.fresh-market-container {
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .fresh-market-container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
