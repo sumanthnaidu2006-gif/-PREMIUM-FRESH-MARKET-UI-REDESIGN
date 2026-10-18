@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   MapPin,
   Truck,
@@ -10,12 +10,14 @@ import {
   ArrowLeft,
   Lock,
   ShoppingBag,
+  Sparkles,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAppAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Navbar } from '../components/common/Navbar';
 import { Footer } from '../components/common/Footer';
+import { INITIAL_PRODUCTS } from '../utils/initialData';
 
 const SHIPPING_METHODS = [
 
@@ -42,12 +44,28 @@ const SHIPPING_METHODS = [
   },
 ];
 
-export const CheckoutPage = () => {
-  const { cartItems, subtotal, discount, shipping, tax, total, clearCart } = useCart();
+export const CheckoutPage = ({ initialStep = 1 }) => {
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const stepParam = queryParams.get('step');
+  const targetInitialStep = location.pathname === '/payment' ? 4 : (stepParam ? Number(stepParam) : initialStep);
+
+  const { cartItems, subtotal, discount, shipping, tax, total, clearCart, addToCart } = useCart();
   const { user, addresses, addAddress, createOrder } = useAppAuth();
   const { showToast } = useToast();
 
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(targetInitialStep);
+
+  // Auto-populate demo basket if user directly visits /payment or ?step=4 with empty cart
+  useEffect(() => {
+    if (cartItems.length === 0 && (location.pathname === '/payment' || stepParam === '4')) {
+      if (INITIAL_PRODUCTS && INITIAL_PRODUCTS.length >= 2) {
+        addToCart(INITIAL_PRODUCTS[0], 2);
+        addToCart(INITIAL_PRODUCTS[2], 1);
+        setCurrentStep(4);
+      }
+    }
+  }, [location.pathname, stepParam]);
   const [selectedAddressId, setSelectedAddressId] = useState(
     addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
   );
@@ -129,22 +147,43 @@ export const CheckoutPage = () => {
     }, 1200);
   };
 
+  const handleLoadDemoCartAndCheckout = (targetStep = 4) => {
+    if (INITIAL_PRODUCTS && INITIAL_PRODUCTS.length >= 2) {
+      addToCart(INITIAL_PRODUCTS[0], 2);
+      addToCart(INITIAL_PRODUCTS[2], 1);
+      setCurrentStep(targetStep);
+      showToast('Loaded demo basket into cart for checkout testing', 'info');
+    }
+  };
+
   if (cartItems.length === 0 && currentStep !== 5) {
     return (
       <div className="min-h-screen bg-[#F8F7F0] flex flex-col text-[#252D27]">
         <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-16 h-16 rounded-3xl bg-[#E9F0E7] flex items-center justify-center text-[#285943] mb-4">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-3xl bg-[#E9F0E7] flex items-center justify-center text-[#285943] mb-4 shadow-sm">
             <ShoppingBag className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-[#1D4232]">Your cart is empty</h1>
-          <p className="text-sm text-[#667168] mt-2">Add items to your cart before proceeding to checkout.</p>
-          <Link
-            to="/"
-            className="mt-6 px-6 py-2.5 rounded-xl bg-[#285943] text-white font-semibold text-sm hover:bg-[#1D4232]"
-          >
-            Start Shopping
-          </Link>
+          <h1 className="text-2xl font-bold text-[#1D4232]">Your cart is currently empty</h1>
+          <p className="text-sm text-[#667168] mt-2 leading-relaxed">
+            To view the 5-step checkout and demo payment authorization page, you can load a sample basket with one click or pick products from the Fresh Market catalog.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-3 mt-6 w-full justify-center">
+            <button
+              type="button"
+              onClick={() => handleLoadDemoCartAndCheckout(4)}
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#EFA36B] hover:bg-[#E39257] text-[#1D4232] font-black text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 stroke-[2.5]" />
+              <span>Load Demo Basket & Go to Payment</span>
+            </button>
+            <Link
+              to="/"
+              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#285943] hover:bg-[#1D4232] text-white font-bold text-sm transition-colors text-center"
+            >
+              Browse Catalog
+            </Link>
+          </div>
         </div>
         <Footer />
       </div>

@@ -40,6 +40,7 @@ createRoot(document.getElementById('root')).render(
                   <Route path="/details/:id" element={<ItemDetails />} />
                   <Route path="/cart" element={<CartPage />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/payment" element={<CheckoutPage initialStep={4} />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/profile" element={<ProfilePage />} />

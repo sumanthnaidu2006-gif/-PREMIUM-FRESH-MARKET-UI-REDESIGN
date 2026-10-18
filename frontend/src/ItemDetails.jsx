@@ -173,7 +173,7 @@ const ItemDetails = () => {
   const handleBuyNow = () => {
     if (isAvailable) {
       addToCart(coffee, quantity);
-      navigate('/cart');
+      navigate('/checkout?step=4');
     }
   };
 
