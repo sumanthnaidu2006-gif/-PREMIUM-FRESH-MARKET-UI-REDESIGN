@@ -16,6 +16,7 @@ import {
   Package,
   LogOut,
   LogIn,
+  UserPlus,
   Layers,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -28,7 +29,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const { totalItemsCount } = useCart();
   const { wishlistCount } = useWishlist();
-  const { user, isAuthenticated, deliveryLocation, isAdmin, signInCognito, signOutCognito } = useAppAuth();
+  const { user, isAuthenticated, deliveryLocation, isAdmin, signInCognito, signOutCognito, signOut, loginAsDemo } = useAppAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -248,105 +249,183 @@ export const Navbar = () => {
               <span className="text-sm font-semibold hidden md:inline">Cart</span>
             </Link>
 
-            {/* Account Menu Dropdown */}
-            <div ref={accountRef} className="relative">
-              <button
-                onClick={() => setIsAccountOpen(!isAccountOpen)}
-                className="flex items-center gap-1.5 p-2 rounded-xl text-white/90 hover:text-white hover:bg-[#285943] transition-colors text-left"
-                aria-expanded={isAccountOpen}
-                aria-label="Account menu"
-              >
-                <div className="w-8 h-8 rounded-full bg-[#285943] border border-white/20 flex items-center justify-center text-white">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="hidden xl:flex flex-col">
-                  <span className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">
-                    {isAuthenticated ? 'Hello,' : 'Welcome'}
-                  </span>
-                  <span className="text-xs font-semibold text-white truncate max-w-[90px]">
-                    {user?.name?.split(' ')[0] || 'Sign In'}
-                  </span>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-white/70 hidden sm:block" />
-              </button>
+            {/* Account Menu / Sign In Controls */}
+            {!isAuthenticated ? (
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <Link
+                  to="/login"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#EFA36B] hover:bg-[#E39257] text-[#1D4232] text-xs font-bold transition-all shadow-xs"
+                >
+                  <LogIn className="w-4 h-4 stroke-[2.2]" />
+                  <span>Sign In</span>
+                </Link>
 
-              {isAccountOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-[#FFFFFF] text-[#252D27] rounded-2xl shadow-xl border border-[#E5E3D9] py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
-                  <div className="px-4 py-3 border-b border-[#E5E3D9] bg-[#F8F7F0]/60">
-                    <p className="text-xs text-[#667168]">Signed in as</p>
-                    <p className="text-sm font-bold text-[#1D4232] truncate">{user?.name}</p>
-                    <p className="text-xs text-[#667168] truncate">{user?.email}</p>
+                <div ref={accountRef} className="relative">
+                  <button
+                    onClick={() => setIsAccountOpen(!isAccountOpen)}
+                    className="p-2 rounded-xl text-white/90 hover:text-white hover:bg-[#285943] transition-colors"
+                    aria-expanded={isAccountOpen}
+                    title="Account options"
+                  >
+                    <ChevronDown className="w-4 h-4 text-white/70" />
+                  </button>
+
+                  {isAccountOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-[#FFFFFF] text-[#252D27] rounded-2xl shadow-xl border border-[#E5E3D9] py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="px-4 py-3 border-b border-[#E5E3D9] bg-[#F8F7F0]/60">
+                        <p className="text-xs text-[#667168]">Welcome to Fresh Market</p>
+                        <p className="text-sm font-bold text-[#1D4232]">Sign in or Register</p>
+                      </div>
+
+                      <div className="p-2 space-y-1">
+                        <Link
+                          to="/login"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#285943] text-white font-semibold text-xs hover:bg-[#1D4232] transition-colors"
+                        >
+                          <LogIn className="w-4 h-4" />
+                          <span>Sign In to Your Account</span>
+                        </Link>
+
+                        <Link
+                          to="/signup"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-[#E5E3D9] text-[#1D4232] font-semibold text-xs hover:bg-[#E9F0E7] transition-colors"
+                        >
+                          <UserPlus className="w-4 h-4 text-[#285943]" />
+                          <span>Create New Account</span>
+                        </Link>
+                      </div>
+
+                      <div className="mt-1 pt-2 border-t border-[#E5E3D9] px-3">
+                        <p className="text-[10px] font-bold text-[#667168] uppercase tracking-wider mb-1.5">
+                          Quick Demo Logins
+                        </p>
+                        <div className="space-y-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAccountOpen(false);
+                              loginAsDemo('customer');
+                            }}
+                            className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium text-[#252D27] hover:bg-[#E9F0E7] flex items-center justify-between"
+                          >
+                            <span>Sophia Bennett</span>
+                            <span className="text-[10px] text-[#285943] font-bold bg-[#E9F0E7] px-1.5 py-0.5 rounded">Customer</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAccountOpen(false);
+                              loginAsDemo('admin');
+                            }}
+                            className="w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium text-[#252D27] hover:bg-[#E9F0E7] flex items-center justify-between"
+                          >
+                            <span>Store Manager</span>
+                            <span className="text-[10px] text-[#EFA36B] font-bold bg-[#EFA36B]/20 px-1.5 py-0.5 rounded">Admin</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Authenticated User Menu */
+              <div ref={accountRef} className="relative">
+                <button
+                  onClick={() => setIsAccountOpen(!isAccountOpen)}
+                  className="flex items-center gap-1.5 p-2 rounded-xl text-white/90 hover:text-white hover:bg-[#285943] transition-colors text-left"
+                  aria-expanded={isAccountOpen}
+                  aria-label="Account menu"
+                >
+                  <div className="w-8 h-8 rounded-full bg-[#285943] border border-white/20 flex items-center justify-center text-white font-bold text-xs">
+                    {user?.name ? user.name[0].toUpperCase() : 'U'}
                   </div>
+                  <div className="hidden xl:flex flex-col">
+                    <span className="text-[10px] text-white/70 uppercase tracking-wider font-semibold">
+                      Hello,
+                    </span>
+                    <span className="text-xs font-semibold text-white truncate max-w-[90px]">
+                      {user?.name?.split(' ')[0] || 'Member'}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-3.5 h-3.5 text-white/70 hidden sm:block" />
+                </button>
 
-                  <div className="py-1 text-sm">
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
-                    >
-                      <User className="w-4 h-4 text-[#285943]" />
-                      <span>Customer Profile</span>
-                    </Link>
+                {isAccountOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-[#FFFFFF] text-[#252D27] rounded-2xl shadow-xl border border-[#E5E3D9] py-2 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="px-4 py-3 border-b border-[#E5E3D9] bg-[#F8F7F0]/60">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-[#667168]">Signed in as</p>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          isAdmin ? 'bg-[#EFA36B]/20 text-[#1D4232]' : 'bg-[#E9F0E7] text-[#285943]'
+                        }`}>
+                          {isAdmin ? 'Admin' : 'Customer'}
+                        </span>
+                      </div>
+                      <p className="text-sm font-bold text-[#1D4232] truncate mt-0.5">{user?.name}</p>
+                      <p className="text-xs text-[#667168] truncate">{user?.email}</p>
+                    </div>
 
-                    <Link
-                      to="/orders"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
-                    >
-                      <Package className="w-4 h-4 text-[#285943]" />
-                      <span>Order History</span>
-                    </Link>
-
-                    <Link
-                      to="/wishlist"
-                      onClick={() => setIsAccountOpen(false)}
-                      className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
-                    >
-                      <Heart className="w-4 h-4 text-[#285943]" />
-                      <span>Saved Wishlist</span>
-                    </Link>
-
-                    {isAdmin && (
+                    <div className="py-1 text-sm">
                       <Link
-                        to="/admin"
+                        to="/profile"
                         onClick={() => setIsAccountOpen(false)}
-                        className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#1D4232] font-semibold transition-colors border-t border-[#E5E3D9]/60"
+                        className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
                       >
-                        <Settings className="w-4 h-4 text-[#EFA36B]" />
-                        <span>Retail Operations (Admin)</span>
+                        <User className="w-4 h-4 text-[#285943]" />
+                        <span>Customer Profile</span>
                       </Link>
-                    )}
-                  </div>
 
-                  <div className="pt-1 mt-1 border-t border-[#E5E3D9] px-2">
-                    {isAuthenticated ? (
+                      <Link
+                        to="/orders"
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
+                      >
+                        <Package className="w-4 h-4 text-[#285943]" />
+                        <span>Order History</span>
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        onClick={() => setIsAccountOpen(false)}
+                        className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#252D27] transition-colors"
+                      >
+                        <Heart className="w-4 h-4 text-[#285943]" />
+                        <span>Saved Wishlist</span>
+                      </Link>
+
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setIsAccountOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-2 hover:bg-[#E9F0E7] text-[#1D4232] font-semibold transition-colors border-t border-[#E5E3D9]/60"
+                        >
+                          <Settings className="w-4 h-4 text-[#EFA36B]" />
+                          <span>Retail Operations (Admin)</span>
+                        </Link>
+                      )}
+                    </div>
+
+                    <div className="pt-1 mt-1 border-t border-[#E5E3D9] px-2 space-y-1">
                       <button
                         onClick={() => {
                           setIsAccountOpen(false);
-                          signOutCognito();
+                          signOut();
                         }}
                         className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[#B83D32] hover:bg-[#B83D32]/10 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        <span>Sign Out (Cognito)</span>
+                        <span>Sign Out</span>
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setIsAccountOpen(false);
-                          signInCognito();
-                        }}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#285943] hover:bg-[#1D4232] text-white text-xs font-semibold transition-colors"
-                      >
-                        <LogIn className="w-4 h-4" />
-                        <span>Sign In with Cognito</span>
-                      </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
+
         </div>
       </nav>
 
@@ -493,27 +572,40 @@ export const Navbar = () => {
 
             <div className="p-4 border-t border-[#E5E3D9] bg-[#F8F7F0]">
               {isAuthenticated ? (
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    signOutCognito();
-                  }}
-                  className="w-full py-2.5 px-4 rounded-xl border border-[#B83D32] text-[#B83D32] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#B83D32]/10"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign Out</span>
-                </button>
+                <div className="space-y-2">
+                  <div className="text-xs text-[#667168] truncate">
+                    Signed in as <span className="font-bold text-[#1D4232]">{user?.name}</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut();
+                    }}
+                    className="w-full py-2.5 px-4 rounded-xl border border-[#B83D32] text-[#B83D32] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#B83D32]/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
               ) : (
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    signInCognito();
-                  }}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#285943] text-white font-semibold text-sm flex items-center justify-center gap-2"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Sign In with Cognito</span>
-                </button>
+                <div className="space-y-2">
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full py-2.5 px-4 rounded-xl bg-[#285943] text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#1D4232] transition-colors"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Sign In</span>
+                  </Link>
+                  <Link
+                    to="/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full py-2.5 px-4 rounded-xl border border-[#285943] text-[#285943] font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[#E9F0E7] transition-colors"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Create Account</span>
+                  </Link>
+                </div>
               )}
             </div>
           </div>

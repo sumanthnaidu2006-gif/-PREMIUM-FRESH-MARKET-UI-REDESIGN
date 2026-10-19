@@ -70,14 +70,14 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
   const safeAddresses = Array.isArray(addresses) && addresses.length > 0 ? addresses : [
     {
       id: 'default-addr',
-      fullName: user?.name || 'Sophia Bennett',
+      fullName: user?.name || 'Guest Shopper',
       street: '742 Evergreen Terrace',
       apartment: 'Apt 4B',
       city: 'Seattle',
       state: 'WA',
       postalCode: '98101',
       country: 'United States',
-      phone: user?.phone || '+1 (206) 555-0142',
+      phone: user?.phone || '',
       isDefault: true,
     }
   ];

@@ -4,11 +4,14 @@ import { deleteAccessToken } from '../utils/apis';
 import { useToast } from './ToastContext';
 
 const AuthContext = createContext(null);
+
+const USERS_STORAGE_KEY = 'fresh_market_registered_users';
+const CURRENT_USER_KEY = 'fresh_market_current_user';
 const ORDERS_STORAGE_KEY = 'fresh_market_orders';
 const LOCATION_STORAGE_KEY = 'fresh_market_delivery_location';
-const USER_STORAGE_KEY = 'fresh_market_customer_profile';
+const OLD_USER_STORAGE_KEY = 'fresh_market_customer_profile';
 
-const INITIAL_ADDRESSES = [
+export const INITIAL_ADDRESSES = [
   {
     id: 'addr-1',
     fullName: 'Sophia Bennett',
@@ -35,12 +38,49 @@ const INITIAL_ADDRESSES = [
   },
 ];
 
+export const DEFAULT_DEMO_ACCOUNTS = [
+  {
+    id: 'user-demo-customer',
+    name: 'Sophia Bennett',
+    email: 'sophia.bennett@freshmarket.com',
+    password: 'password123',
+    phone: '+1 (206) 555-0142',
+    role: 'customer',
+    addresses: INITIAL_ADDRESSES,
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'user-demo-admin',
+    name: 'Fresh Market Admin',
+    email: 'admin@freshmarket.com',
+    password: 'admin123',
+    phone: '+1 (206) 555-0100',
+    role: 'admin',
+    addresses: [
+      {
+        id: 'addr-admin-1',
+        fullName: 'Store Operations',
+        street: '100 Pike Place Market',
+        apartment: 'Suite 400',
+        city: 'Seattle',
+        state: 'WA',
+        postalCode: '98101',
+        country: 'United States',
+        phone: '+1 (206) 555-0100',
+        isDefault: true,
+      },
+    ],
+    createdAt: '2026-01-01T00:00:00.000Z',
+  },
+];
+
 const INITIAL_ORDERS = [
   {
     id: 'ord-84920',
     orderNumber: 'FM-2026-84920',
     date: '2026-10-14T14:32:00.000Z',
     status: 'Delivered',
+    userEmail: 'sophia.bennett@freshmarket.com',
     items: [
       {
         id: 'prod-fg-01',
@@ -84,25 +124,44 @@ export const AuthProvider = ({ children }) => {
   const oidcAuth = useAuth();
   const { showToast } = useToast();
 
-  const [demoUser, setDemoUser] = useState(() => {
+  // 1. Registered Users Database (Persistent in LocalStorage)
+  const [registeredUsers, setRegisteredUsers] = useState(() => {
     try {
-      const stored = localStorage.getItem(USER_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {
-        name: 'Sophia Bennett',
-        email: 'sophia.bennett@freshmarket.com',
-        phone: '+1 (206) 555-0142',
-        addresses: INITIAL_ADDRESSES,
-      };
-    } catch {
-      return {
-        name: 'Sophia Bennett',
-        email: 'sophia.bennett@freshmarket.com',
-        phone: '+1 (206) 555-0142',
-        addresses: INITIAL_ADDRESSES,
-      };
+      const stored = localStorage.getItem(USERS_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading registered users:', e);
     }
+    return DEFAULT_DEMO_ACCOUNTS;
   });
 
+  // 2. Active Session / Current User
+  // Defaults to null unless the user explicitly logs in or previously logged in.
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      // Clear legacy hardcoded Sofia auto-login if the user never explicitly signed in
+      const legacyUser = localStorage.getItem(OLD_USER_STORAGE_KEY);
+      const stored = localStorage.getItem(CURRENT_USER_KEY);
+
+      if (stored) {
+        return JSON.parse(stored);
+      }
+      // If only legacy user exists without explicit current user session, clean it up so default isn't forced to Sofia
+      if (legacyUser) {
+        localStorage.removeItem(OLD_USER_STORAGE_KEY);
+      }
+    } catch (e) {
+      console.warn('Error reading current user session:', e);
+    }
+    return null;
+  });
+
+  // 3. Delivery Location
   const [deliveryLocation, setDeliveryLocation] = useState(() => {
     try {
       const stored = localStorage.getItem(LOCATION_STORAGE_KEY);
@@ -122,6 +181,7 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
+  // 4. Orders Store
   const [orders, setOrders] = useState(() => {
     try {
       const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
@@ -131,16 +191,29 @@ export const AuthProvider = ({ children }) => {
     }
   });
 
-  const [isAdmin, setIsAdmin] = useState(true);
-
+  // Save registered users list
   useEffect(() => {
     try {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(demoUser));
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(registeredUsers));
     } catch (e) {
-      console.error('Error saving profile:', e);
+      console.error('Error saving registered users:', e);
     }
-  }, [demoUser]);
+  }, [registeredUsers]);
 
+  // Save or clear active session
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem(CURRENT_USER_KEY);
+      }
+    } catch (e) {
+      console.error('Error syncing current user session:', e);
+    }
+  }, [currentUser]);
+
+  // Save delivery location
   useEffect(() => {
     try {
       localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(deliveryLocation));
@@ -149,6 +222,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [deliveryLocation]);
 
+  // Save orders
   useEffect(() => {
     try {
       localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(orders));
@@ -157,15 +231,125 @@ export const AuthProvider = ({ children }) => {
     }
   }, [orders]);
 
+  // Authenticate / Register a New Account
+  const signUp = async ({ name, email, password, phone = '', address = null, role = 'customer' }) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanName = (name || '').trim();
+
+    if (!cleanName) {
+      showToast('Please enter your full name', 'error');
+      return { success: false, error: 'Full name is required.' };
+    }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      showToast('Please enter a valid email address', 'error');
+      return { success: false, error: 'A valid email address is required.' };
+    }
+    if (!password || password.length < 6) {
+      showToast('Password must be at least 6 characters long', 'error');
+      return { success: false, error: 'Password must be at least 6 characters.' };
+    }
+
+    const emailExists = registeredUsers.some(
+      (u) => u.email.toLowerCase() === cleanEmail
+    );
+    if (emailExists) {
+      showToast('An account with this email already exists', 'error');
+      return { success: false, error: 'An account with this email already exists. Please log in.' };
+    }
+
+    const initialAddresses = [];
+    if (address && address.street) {
+      initialAddresses.push({
+        id: `addr-${Date.now()}`,
+        fullName: cleanName,
+        street: address.street,
+        apartment: address.apartment || '',
+        city: address.city || 'Seattle',
+        state: address.state || 'WA',
+        postalCode: address.postalCode || '98101',
+        country: 'United States',
+        phone: phone || '',
+        isDefault: true,
+      });
+    }
+
+    const newUser = {
+      id: `user-${Date.now()}`,
+      name: cleanName,
+      email: cleanEmail,
+      password: password,
+      phone: phone || '',
+      role: role || (cleanEmail.includes('admin') ? 'admin' : 'customer'),
+      addresses: initialAddresses,
+      createdAt: new Date().toISOString(),
+    };
+
+    setRegisteredUsers((prev) => [...prev, newUser]);
+    setCurrentUser(newUser);
+    showToast(`Account created! Welcome to Fresh Market, ${cleanName.split(' ')[0]}`, 'success');
+    return { success: true, user: newUser };
+  };
+
+  // Sign in with existing credentials
+  const signIn = async (email, password) => {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      showToast('Please enter both email and password', 'error');
+      return { success: false, error: 'Email and password are required.' };
+    }
+
+    const matchedUser = registeredUsers.find(
+      (u) => u.email.toLowerCase() === cleanEmail
+    );
+    if (!matchedUser) {
+      showToast('No account found with this email. Please sign up.', 'error');
+      return { success: false, error: 'No account found with this email address.' };
+    }
+
+    if (matchedUser.password !== password) {
+      showToast('Incorrect password. Please try again.', 'error');
+      return { success: false, error: 'Incorrect password.' };
+    }
+
+    setCurrentUser(matchedUser);
+    showToast(`Signed in successfully! Welcome back, ${matchedUser.name}`, 'success');
+    return { success: true, user: matchedUser };
+  };
+
+  // 1-Click Quick Demo Login Helper
+  const loginAsDemo = (accountRole = 'customer') => {
+    const targetEmail = accountRole === 'admin' ? 'admin@freshmarket.com' : 'sophia.bennett@freshmarket.com';
+    let demoAcc = registeredUsers.find((u) => u.email.toLowerCase() === targetEmail);
+    if (!demoAcc) {
+      demoAcc = accountRole === 'admin' ? DEFAULT_DEMO_ACCOUNTS[1] : DEFAULT_DEMO_ACCOUNTS[0];
+      setRegisteredUsers((prev) => [...prev, demoAcc]);
+    }
+    setCurrentUser(demoAcc);
+    showToast(`Logged in as ${demoAcc.name} (${demoAcc.role === 'admin' ? 'Admin' : 'Customer'})`, 'success');
+    return demoAcc;
+  };
+
+  // Sign out cleanly
+  const signOut = () => {
+    setCurrentUser(null);
+    deleteAccessToken();
+    if (oidcAuth && oidcAuth.removeUser) {
+      try {
+        oidcAuth.removeUser();
+      } catch (err) {
+        console.warn('OIDC removeUser error:', err);
+      }
+    }
+    showToast('Signed out of Fresh Market', 'info');
+    return { success: true };
+  };
+
   // Cognito sign-out redirect
   const signOutCognito = () => {
     const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID || "2dlqkmsfj6vc2li1uenc0osh3m";
     const logoutUri = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : "https://d1vsslyvj5i9m6.cloudfront.net";
     const cognitoDomain = "https://us-east-1rxq7q3klm.auth.us-east-1.amazoncognito.com";
-    deleteAccessToken();
-    if (oidcAuth && oidcAuth.removeUser) {
-      oidcAuth.removeUser();
-    }
+    signOut();
     window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
   };
 
@@ -173,46 +357,58 @@ export const AuthProvider = ({ children }) => {
     if (oidcAuth && oidcAuth.signinRedirect) {
       oidcAuth.signinRedirect().catch((err) => {
         console.warn('Cognito redirect caught error:', err);
-        showToast('Cognito sign-in opened. In local mode, you are authenticated as customer.', 'info');
+        showToast('Cognito sign-in opened. In local mode, you can sign in directly.', 'info');
       });
     }
   };
 
+  // Update profile attributes (name, phone, etc.)
+  const updateProfile = (updates) => {
+    if (!currentUser) return;
+    const updated = { ...currentUser, ...updates };
+    setCurrentUser(updated);
+    setRegisteredUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updated : u)));
+    showToast('Profile updated successfully', 'success');
+  };
+
+  // Address operations
   const addAddress = (newAddress) => {
     const addressWithId = {
       ...newAddress,
       id: `addr-${Date.now()}`,
-      isDefault: demoUser.addresses.length === 0 || newAddress.isDefault,
+      isDefault: !currentUser || !currentUser.addresses || currentUser.addresses.length === 0 || Boolean(newAddress.isDefault),
     };
 
-    setDemoUser((prev) => {
-      let updatedList = [...prev.addresses];
-      if (addressWithId.isDefault) {
-        updatedList = updatedList.map((a) => ({ ...a, isDefault: false }));
-      }
-      return {
-        ...prev,
-        addresses: [...updatedList, addressWithId],
-      };
-    });
+    if (currentUser) {
+      const currentList = currentUser.addresses || [];
+      const updatedList = addressWithId.isDefault
+        ? currentList.map((a) => ({ ...a, isDefault: false })).concat(addressWithId)
+        : [...currentList, addressWithId];
+
+      const updatedUser = { ...currentUser, addresses: updatedList };
+      setCurrentUser(updatedUser);
+      setRegisteredUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updatedUser : u)));
+    }
     showToast('Delivery address saved successfully', 'success');
   };
 
   const setDefaultAddress = (addressId) => {
-    setDemoUser((prev) => ({
-      ...prev,
-      addresses: prev.addresses.map((a) => ({
-        ...a,
-        isDefault: a.id === addressId,
-      })),
+    if (!currentUser) return;
+    const updatedList = (currentUser.addresses || []).map((a) => ({
+      ...a,
+      isDefault: a.id === addressId,
     }));
+    const updatedUser = { ...currentUser, addresses: updatedList };
+    setCurrentUser(updatedUser);
+    setRegisteredUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updatedUser : u)));
   };
 
   const deleteAddress = (addressId) => {
-    setDemoUser((prev) => ({
-      ...prev,
-      addresses: prev.addresses.filter((a) => a.id !== addressId),
-    }));
+    if (!currentUser) return;
+    const updatedList = (currentUser.addresses || []).filter((a) => a.id !== addressId);
+    const updatedUser = { ...currentUser, addresses: updatedList };
+    setCurrentUser(updatedUser);
+    setRegisteredUsers((prev) => prev.map((u) => (u.id === currentUser.id ? updatedUser : u)));
     showToast('Address removed', 'info');
   };
 
@@ -234,6 +430,7 @@ export const AuthProvider = ({ children }) => {
       orderNumber: `FM-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`,
       date: new Date().toISOString(),
       status: 'Processing',
+      userEmail: currentUser?.email || 'guest@freshmarket.com',
     };
 
     setOrders((prev) => [newOrder, ...prev]);
@@ -247,29 +444,41 @@ export const AuthProvider = ({ children }) => {
     showToast(`Order status updated to ${newStatus}`, 'success');
   };
 
-  const isAuthenticated = Boolean(oidcAuth?.isAuthenticated || demoUser?.email);
-  const currentUser = oidcAuth?.isAuthenticated && oidcAuth?.user?.profile
+  // Determine effective authenticated user
+  const isAuthenticated = Boolean(oidcAuth?.isAuthenticated || currentUser !== null);
+
+  const activeUser = oidcAuth?.isAuthenticated && oidcAuth?.user?.profile
     ? {
-        name: oidcAuth.user.profile.name || oidcAuth.user.profile.email?.split('@')[0] || demoUser.name,
-        email: oidcAuth.user.profile.email || demoUser.email,
-        phone: demoUser.phone,
-        addresses: demoUser.addresses,
+        id: oidcAuth.user.profile.sub || 'cognito-user',
+        name: oidcAuth.user.profile.name || oidcAuth.user.profile.email?.split('@')[0] || 'Cognito User',
+        email: oidcAuth.user.profile.email || 'cognito@freshmarket.com',
+        phone: oidcAuth.user.profile.phone_number || '',
+        role: 'customer',
+        addresses: currentUser?.addresses || [],
       }
-    : demoUser;
+    : currentUser;
+
+  const isAdmin = Boolean(activeUser?.role === 'admin' || activeUser?.email === 'admin@freshmarket.com');
 
   return (
     <AuthContext.Provider
       value={{
         oidcAuth,
         isAuthenticated,
-        user: currentUser,
+        user: activeUser,
+        currentUser: activeUser,
+        registeredUsers,
         isAdmin,
-        setIsAdmin,
+        signIn,
+        signUp,
+        signOut,
+        loginAsDemo,
+        updateProfile,
         signInCognito,
         signOutCognito,
         deliveryLocation,
         updateLocation,
-        addresses: currentUser.addresses,
+        addresses: activeUser?.addresses || [],
         addAddress,
         setDefaultAddress,
         deleteAddress,

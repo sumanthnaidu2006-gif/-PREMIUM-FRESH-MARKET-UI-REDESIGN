@@ -17,6 +17,7 @@ import OrdersPage from './pages/OrdersPage';
 import WishlistPage from './pages/WishlistPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminPage from './pages/AdminPage';
+import LoginPage from './pages/LoginPage';
 
 // Active AWS Learner Lab Cognito configuration
 const cognitoAuthConfig = {
@@ -45,6 +46,8 @@ createRoot(document.getElementById('root')).render(
                   <Route path="/wishlist" element={<WishlistPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<LoginPage initialMode="signup" />} />
                 </Routes>
               </Router>
             </CartProvider>
