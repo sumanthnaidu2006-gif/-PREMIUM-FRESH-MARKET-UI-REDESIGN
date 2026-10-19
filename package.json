@@ -6,6 +6,7 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "lint": "npm --prefix frontend run lint",
+    "deploy:aws": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-aws.ps1",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
