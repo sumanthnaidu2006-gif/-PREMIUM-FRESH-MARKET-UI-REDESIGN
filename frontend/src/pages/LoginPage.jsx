@@ -33,14 +33,14 @@ export const LoginPage = ({ initialMode = 'signin' }) => {
   const modeParam = searchParams.get('mode');
   const [mode, setMode] = useState(modeParam === 'signup' || initialMode === 'signup' ? 'signup' : 'signin');
 
-  // Sync mode with search param if changed
+  // Sync mode with search param or initialMode if changed
   useEffect(() => {
-    if (modeParam === 'signup') {
+    if (modeParam === 'signup' || (!modeParam && initialMode === 'signup')) {
       setMode('signup');
-    } else if (modeParam === 'signin') {
+    } else if (modeParam === 'signin' || (!modeParam && initialMode === 'signin')) {
       setMode('signin');
     }
-  }, [modeParam]);
+  }, [modeParam, initialMode]);
 
   // If already authenticated and not trying to switch accounts, provide a quick redirect
   const redirectTarget = location.state?.from || '/';
@@ -89,6 +89,7 @@ export const LoginPage = ({ initialMode = 'signin' }) => {
         setSignInError(res.error || 'Failed to sign in. Please verify your credentials.');
       }
     } catch (err) {
+      console.error('Sign in error:', err);
       setSignInError('An unexpected error occurred during sign in.');
     } finally {
       setSignInLoading(false);
@@ -142,6 +143,7 @@ export const LoginPage = ({ initialMode = 'signin' }) => {
         setSignUpError(res.error || 'Failed to create account.');
       }
     } catch (err) {
+      console.error('Registration error:', err);
       setSignUpError('An unexpected error occurred during registration.');
     } finally {
       setSignUpLoading(false);

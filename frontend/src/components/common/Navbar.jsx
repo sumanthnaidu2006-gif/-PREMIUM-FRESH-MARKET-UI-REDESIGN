@@ -29,7 +29,7 @@ export const Navbar = () => {
   const navigate = useNavigate();
   const { totalItemsCount } = useCart();
   const { wishlistCount } = useWishlist();
-  const { user, isAuthenticated, deliveryLocation, isAdmin, signInCognito, signOutCognito, signOut, loginAsDemo } = useAppAuth();
+  const { user, isAuthenticated, deliveryLocation, isAdmin, signOut, loginAsDemo } = useAppAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
