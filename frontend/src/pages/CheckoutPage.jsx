@@ -11,6 +11,7 @@ import {
   Lock,
   ShoppingBag,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAppAuth } from '../context/AuthContext';
@@ -66,8 +67,23 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
       }
     }
   }, [location.pathname, stepParam, cartItems.length, addToCart]);
+  const safeAddresses = Array.isArray(addresses) && addresses.length > 0 ? addresses : [
+    {
+      id: 'default-addr',
+      fullName: user?.name || 'Sophia Bennett',
+      street: '742 Evergreen Terrace',
+      apartment: 'Apt 4B',
+      city: 'Seattle',
+      state: 'WA',
+      postalCode: '98101',
+      country: 'United States',
+      phone: user?.phone || '+1 (206) 555-0142',
+      isDefault: true,
+    }
+  ];
+
   const [selectedAddressId, setSelectedAddressId] = useState(
-    addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
+    safeAddresses.find((a) => a.isDefault)?.id || safeAddresses[0]?.id || ''
   );
   const [selectedShippingMethod, setSelectedShippingMethod] = useState(SHIPPING_METHODS[0]);
   const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
@@ -90,7 +106,7 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
   const [paymentError, setPaymentError] = useState(null);
   const [confirmedOrder, setConfirmedOrder] = useState(null);
 
-  const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
+  const selectedAddress = safeAddresses.find((a) => a.id === selectedAddressId) || safeAddresses[0];
 
   const handleAddNewAddressSubmit = (e) => {
     e.preventDefault();
@@ -263,29 +279,29 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
             <div className="bg-[#F8F7F0] p-6 rounded-2xl border border-[#E5E3D9] text-left my-8 space-y-3 text-xs">
               <div className="flex justify-between border-b border-[#E5E3D9] pb-2">
                 <span className="text-[#667168]">Order Reference:</span>
-                <span className="font-bold text-[#1D4232]">{confirmedOrder.orderNumber}</span>
+                <span className="font-bold text-[#1D4232]">{confirmedOrder?.orderNumber}</span>
               </div>
               <div className="flex justify-between border-b border-[#E5E3D9] pb-2">
                 <span className="text-[#667168]">Delivery Destination:</span>
                 <span className="font-semibold text-[#252D27]">
-                  {confirmedOrder.deliveryAddress.street}, {confirmedOrder.deliveryAddress.city}
+                  {confirmedOrder?.deliveryAddress?.street || 'Local Address'}, {confirmedOrder?.deliveryAddress?.city || 'Seattle'}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E3D9] pb-2">
                 <span className="text-[#667168]">Estimated Delivery:</span>
                 <span className="font-bold text-[#285943]">
-                  {confirmedOrder.shippingMethod.deliveryTime}
+                  {confirmedOrder?.shippingMethod?.deliveryTime || 'Today'}
                 </span>
               </div>
               <div className="flex justify-between border-b border-[#E5E3D9] pb-2">
                 <span className="text-[#667168]">Payment Method:</span>
                 <span className="font-semibold text-[#252D27]">
-                  {confirmedOrder.paymentMethod.type} (Demo Approved)
+                  {confirmedOrder?.paymentMethod?.type || 'Demo Card'} (Demo Approved)
                 </span>
               </div>
               <div className="flex justify-between pt-1 text-sm font-bold text-[#1D4232]">
                 <span>Total Amount Charged:</span>
-                <span>${confirmedOrder.total.toFixed(2)}</span>
+                <span>${(confirmedOrder?.total || 0).toFixed(2)}</span>
               </div>
             </div>
 
@@ -434,7 +450,7 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
                     </form>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {addresses.map((addr) => {
+                      {safeAddresses.map((addr) => {
                         const isSelected = selectedAddressId === addr.id;
                         return (
                           <div
@@ -556,9 +572,9 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
                       <span className="font-bold text-[#667168] uppercase text-[10px] block mb-1">
                         Shipping To:
                       </span>
-                      <p className="font-semibold text-[#252D27]">{selectedAddress.fullName}</p>
+                      <p className="font-semibold text-[#252D27]">{selectedAddress?.fullName || 'Customer'}</p>
                       <p className="text-[#667168]">
-                        {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.postalCode}
+                        {selectedAddress?.street || ''}, {selectedAddress?.city || ''}, {selectedAddress?.state || ''} {selectedAddress?.postalCode || ''}
                       </p>
                     </div>
 
@@ -566,8 +582,8 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
                       <span className="font-bold text-[#667168] uppercase text-[10px] block mb-1">
                         Delivery Method:
                       </span>
-                      <p className="font-semibold text-[#285943]">{selectedShippingMethod.name}</p>
-                      <p className="text-[#667168]">{selectedShippingMethod.deliveryTime}</p>
+                      <p className="font-semibold text-[#285943]">{selectedShippingMethod?.name || 'Standard Delivery'}</p>
+                      <p className="text-[#667168]">{selectedShippingMethod?.deliveryTime || 'Today'}</p>
                     </div>
                   </div>
 
