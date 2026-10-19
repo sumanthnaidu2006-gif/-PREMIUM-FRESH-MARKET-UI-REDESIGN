@@ -79,6 +79,17 @@ npm run build
 
 ---
 
+## 🌐 Live Website (GitHub Pages)
+
+The platform is configured for automatic deployment via GitHub Actions:
+- **Live URL**: [https://sumanthnaidu2006-gif.github.io/-PREMIUM-FRESH-MARKET-UI-REDESIGN/](https://sumanthnaidu2006-gif.github.io/-PREMIUM-FRESH-MARKET-UI-REDESIGN/)
+
+> **GitHub Pages Configuration**:
+> In your repository settings (`Settings -> Pages`):
+> Set **Build and deployment Source** to **GitHub Actions** (or Deploy from branch `gh-pages` / `main`). The repository includes an automated workflow `.github/workflows/deploy.yml` that builds and publishes the production site automatically on every push.
+
+---
+
 ## 📂 Repository Structure
 
 ```

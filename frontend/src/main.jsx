@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import { AuthProvider as CognitoOidcProvider } from 'react-oidc-context';
 import './index.css';
 
@@ -22,7 +22,7 @@ import AdminPage from './pages/AdminPage';
 const cognitoAuthConfig = {
   authority: 'https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xUFprVIQe',
   client_id: '2dlqkmsfj6vc2li1uenc0osh3m',
-  redirect_uri: typeof window !== 'undefined' ? window.location.origin : 'https://d1vsslyvj5i9m6.cloudfront.net',
+  redirect_uri: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : 'https://d1vsslyvj5i9m6.cloudfront.net',
   response_type: 'code',
   scope: 'email openid phone',
 };

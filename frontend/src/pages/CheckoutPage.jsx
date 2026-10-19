@@ -65,7 +65,7 @@ export const CheckoutPage = ({ initialStep = 1 }) => {
         setCurrentStep(4);
       }
     }
-  }, [location.pathname, stepParam]);
+  }, [location.pathname, stepParam, cartItems.length, addToCart]);
   const [selectedAddressId, setSelectedAddressId] = useState(
     addresses.find((a) => a.isDefault)?.id || addresses[0]?.id || ''
   );

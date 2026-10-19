@@ -159,8 +159,8 @@ export const AuthProvider = ({ children }) => {
 
   // Cognito sign-out redirect
   const signOutCognito = () => {
-    const clientId = "6fjfrlaup7oph5lhf1q8q6pnp4";
-    const logoutUri = "https://d1vsslyvj5i9m6.cloudfront.net";
+    const clientId = import.meta.env.VITE_COGNITO_CLIENT_ID || "2dlqkmsfj6vc2li1uenc0osh3m";
+    const logoutUri = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : "https://d1vsslyvj5i9m6.cloudfront.net";
     const cognitoDomain = "https://us-east-1rxq7q3klm.auth.us-east-1.amazoncognito.com";
     deleteAccessToken();
     if (oidcAuth && oidcAuth.removeUser) {
