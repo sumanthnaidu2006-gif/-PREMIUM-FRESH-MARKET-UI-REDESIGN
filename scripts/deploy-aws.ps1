@@ -34,8 +34,9 @@ Write-Host "Frontend bundle built successfully!" -ForegroundColor Green
 Write-Host "`n[3/4] Finding S3 bucket and CloudFront distribution..." -ForegroundColor Yellow
 
 $targetDomain = "d1vsslyvj5i9m6.cloudfront.net"
+$defaultBucket = "canopy-assets-218862656675-us-east-1"
 $distId = $null
-$s3Bucket = $null
+$s3Bucket = $defaultBucket
 
 try {
     $distsJson = aws cloudfront list-distributions --output json | ConvertFrom-Json
