@@ -1,6 +1,6 @@
 import { INITIAL_PRODUCTS } from './initialData';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "https://46435jfhh7.execute-api.us-east-1.amazonaws.com").replace(/\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "https://jc1sioj90l.execute-api.us-east-1.amazonaws.com").replace(/\/+$/, '');
 
 const getAccessToken = () => {
     try {
